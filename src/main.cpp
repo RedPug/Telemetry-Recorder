@@ -8,13 +8,10 @@
 
 bool is_network_active = false;
 
-bool is_sleeping = false;
-
 void renderTask();
 void checkCommandInputs();
 
-void setup()
-{
+void setup(){
   Serial.begin(9600);
   Serial.print("Free heap: ");
   Serial.println(ESP.getFreeHeap());
@@ -41,41 +38,23 @@ void setup()
   digitalWrite(TFT_BL, HIGH);
 }
 
-void loop()
-{
+void loop(){
   static bool was_right_pressed = false;
   bool is_right_pressed = !digitalRead(RIGHT_BTN_PIN);
-
-  if (is_right_pressed && !was_right_pressed)
-  {
-    is_sleeping = !is_sleeping;
-    if (is_sleeping)
-    {
-      Serial.println("Going to sleep...");
-      digitalWrite(TFT_BL, LOW);
-      is_network_active = false;
-      WifiHandler::terminateServer();
-      TelemetryHandler::is_logging = false;
-    }
-    else
-    {
-      Serial.println("Waking up...");
-      digitalWrite(TFT_BL, HIGH);
-    }
+  if (!is_right_pressed && was_right_pressed){
+    Serial.println("Going to sleep...");
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, LOW);
+    delay(500);
+    esp_deep_sleep_start();
   }
-
   was_right_pressed = is_right_pressed;
 
-  if (is_sleeping){
-    delay(100);
-    return;
-  }
 
   static bool was_left_pressed = false;
 
   bool is_left_pressed = !digitalRead(LEFT_BTN_PIN);
   // Serial.println(is_left_pressed);
-  if (is_left_pressed && !was_left_pressed){
+  if (!is_left_pressed && was_left_pressed){
     if (!is_network_active){
       is_network_active = true;
       WifiHandler::initServer();
