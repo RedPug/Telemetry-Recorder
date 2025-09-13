@@ -12,6 +12,7 @@ namespace WifiHandler{
     WiFiClient client;
 
     uint8_t connection_status = WIFI_INACTIVE;
+    uint32_t last_heartbeat_ms = 0;
 
     void initServer(){
         WiFi.softAP(ssid, password);

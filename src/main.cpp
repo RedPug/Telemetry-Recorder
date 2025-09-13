@@ -89,8 +89,8 @@ void checkCommandInputs(){
     else if (cmd.equalsIgnoreCase("stop")){
       TelemetryHandler::is_logging = false;
       Serial.println("Logging stopped");
-    }else if (cmd.equalsIgnoreCase("ACK")){
-      TelemetryHandler::last_ack_ms = millis();
+    }else if (cmd.equalsIgnoreCase("HB")){
+      WifiHandler::last_heartbeat_ms = millis();
     }
   }
 }

@@ -54,16 +54,12 @@ KalmanFilter kalmanZ = KalmanFilter(10, 500, 1);
 std::queue<TelemetryPacket> telemetryBuffer;
 MPU6050 mpu;
 
-uint32_t TelemetryHandler::last_ack_ms = 0;
-uint32_t last_packet_ms = 0;
-
 //sends the queued telemetry to the client
 void sendData(){
 
     while(WifiHandler::client.connected() && !telemetryBuffer.empty()){
-        //check if we have received an ACK within a second of the last packet, verifying the connection is still alive.
-        if(!(int32_t(TelemetryHandler::last_ack_ms) - millis() > -1500)){
-            Serial.println("No ACK received within 1.5 seconds...");
+        //check if we have received an heartbeat recently, verifying the connection is still alive.
+        if(!(int32_t(WifiHandler::last_heartbeat_ms) - millis() > -1500)){
             return;
         }
 
@@ -81,7 +77,6 @@ void sendData(){
             return; //probably a network error, stop trying to send more.
         }
         telemetryBuffer.pop(); //only pop if it was actually sent.
-        last_packet_ms = millis();
         // Serial.println(" sent!");
     }
 
@@ -156,10 +151,9 @@ namespace TelemetryHandler{
 
         if (is_logging && dt >= 1){ //don't sample faster than 1kHz
             sampleSensors(dt);
-            
         }
 
-        if (timer >= 500){
+        if (timer >= 100){
             timer = 0;
             
             if(is_logging) queueTelemetry();
