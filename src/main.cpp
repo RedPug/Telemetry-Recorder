@@ -1,6 +1,6 @@
+
 #include <Arduino.h>
 #include <SPI.h>
-#include <User_Setup.h>
 #include <Renderer.h>
 #include "Pins.h"
 #include "WifiHandler.h"
@@ -11,9 +11,10 @@ bool is_network_active = false;
 bool is_sleeping = false;
 
 void renderTask();
-void telemetryTask(WiFiClient client);
+void checkCommandInputs();
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   Serial.print("Free heap: ");
   Serial.println(ESP.getFreeHeap());
@@ -40,19 +41,24 @@ void setup() {
   digitalWrite(TFT_BL, HIGH);
 }
 
-void loop() {
+void loop()
+{
   static bool was_right_pressed = false;
   bool is_right_pressed = !digitalRead(RIGHT_BTN_PIN);
 
-  if(is_right_pressed && !was_right_pressed){
+  if (is_right_pressed && !was_right_pressed)
+  {
     is_sleeping = !is_sleeping;
-    if(is_sleeping){
+    if (is_sleeping)
+    {
       Serial.println("Going to sleep...");
       digitalWrite(TFT_BL, LOW);
       is_network_active = false;
       WifiHandler::terminateServer();
       TelemetryHandler::is_logging = false;
-    }else{
+    }
+    else
+    {
       Serial.println("Waking up...");
       digitalWrite(TFT_BL, HIGH);
     }
@@ -60,7 +66,7 @@ void loop() {
 
   was_right_pressed = is_right_pressed;
 
-  if(is_sleeping){
+  if (is_sleeping){
     delay(100);
     return;
   }
@@ -69,51 +75,45 @@ void loop() {
 
   bool is_left_pressed = !digitalRead(LEFT_BTN_PIN);
   // Serial.println(is_left_pressed);
-  if(is_left_pressed && !was_left_pressed){
-    if(!is_network_active){
+  if (is_left_pressed && !was_left_pressed){
+    if (!is_network_active){
       is_network_active = true;
       WifiHandler::initServer();
-      
-    }else{
+    }
+    else{
       is_network_active = false;
       WifiHandler::terminateServer();
-      
     }
   }
 
   was_left_pressed = is_left_pressed;
 
-
-  // telemetryTask();
-  if(!WifiHandler::client.connected()) WifiHandler::client = WifiHandler::server.available();
-  // WifiHandler::client = WifiHandler::server.available();
-  if(WifiHandler::client.connected()){
-    telemetryTask(WifiHandler::client);
-  }
-
   WifiHandler::checkUpdates();
 
-  // Serial.print("Connected clients: ");
-  // Serial.println(WiFi.softAPgetStationNum());
+  checkCommandInputs();
+
+  TelemetryHandler::loop();
+
   renderTask();
 }
 
-
-void telemetryTask(WiFiClient client){
+void checkCommandInputs(){
   // Check for incoming commands from laptop
-  if (client.available()) {
-    String cmd = client.readStringUntil('\n');
+  if (WifiHandler::client.connected() && WifiHandler::client.available()){
+    String cmd = WifiHandler::client.readStringUntil('\n');
+
     cmd.trim();
-    if (cmd.equalsIgnoreCase("start")) {
+    if (cmd.equalsIgnoreCase("start")){
       TelemetryHandler::is_logging = true;
       Serial.println("Logging started");
-    } else if (cmd.equalsIgnoreCase("stop")) {
+    }
+    else if (cmd.equalsIgnoreCase("stop")){
       TelemetryHandler::is_logging = false;
       Serial.println("Logging stopped");
+    }else if (cmd.equalsIgnoreCase("ACK")){
+      TelemetryHandler::last_ack_ms = millis();
     }
   }
-
-  if(TelemetryHandler::is_logging) TelemetryHandler::loop(client);
 }
 
 void renderTask(){
@@ -126,7 +126,7 @@ void renderTask(){
 
   const int mspt = 200;
 
-  if(dt > mspt){
+  if (dt > mspt){
     Renderer::updateDisplay();
     dt = 0;
   }

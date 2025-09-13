@@ -15,9 +15,6 @@ namespace WifiHandler{
 
     void initServer(){
         WiFi.softAP(ssid, password);
-        // Serial.println("Access Point Started");
-        // Serial.print("IP address: ");
-        // Serial.println(WiFi.softAPIP());
 
         server.begin();
         connection_status = WIFI_ACTIVE;
@@ -30,7 +27,15 @@ namespace WifiHandler{
 
         int num_clients = WiFi.softAPgetStationNum();
 
-        if(num_clients > 0){
+        if (!client.connected() || num_clients == 0) {
+            client.stop();
+            WiFiClient newClient = server.available();
+            if (newClient) {
+                client = newClient;
+            }
+        }
+
+        if(client.connected()){
             connection_status = WIFI_CONNECTED;
         }else{
             connection_status = WIFI_ACTIVE;
