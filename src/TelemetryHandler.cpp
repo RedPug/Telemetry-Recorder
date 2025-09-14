@@ -1,65 +1,30 @@
-#include <TelemetryHandler.h>
 #include <inttypes.h>
 #include <Arduino.h>
 #include <WiFi.h>
 #include <MPU6050.h>
 #include <queue>
-#include "WifiHandler.h"
-
-class KalmanFilter{
-private:
-    float past_state;
-    float estimate_error;
-    float measurement_error;
-    float kalman_gain;
-    float process_noise;
-
-public:
-    KalmanFilter(float initial_estimate_error = 1.0f, float measurement_error = 1.0f, float process_noise = 0.01f)
-        : past_state(0.0f), estimate_error(initial_estimate_error),
-          measurement_error(measurement_error), kalman_gain(0.0f),
-          process_noise(process_noise)
-    {
-    }
-
-    void update(float value, int ms_elapsed)
-    {
-        // Prediction update (no control input, so just propagate error)
-        estimate_error += process_noise * ms_elapsed; // process noise, tune as needed
-
-        // Measurement update
-        kalman_gain = estimate_error / (estimate_error + measurement_error);
-        past_state += kalman_gain * (value - past_state);
-        estimate_error = (1 - kalman_gain) * estimate_error;
-    }
-
-    float getFilteredValue()
-    {
-        return past_state;
-    }
-};
+#include "WifiHandler.hpp"
+#include "KalmanFilter.hpp"
+#include "TelemetryHandler.hpp"
+#include "AccelerometerProvider.hpp"
+#include "GpsProvider.hpp"
 
 struct __attribute__((packed)) TelemetryPacket{
     uint8_t signal;
     uint32_t time;
-    uint16_t ax, ay, az;
-    int64_t gps_long, gps_lat;
+    int16_t ax, ay, az;
+    int32_t gps_long, gps_lat;
 };
-
-KalmanFilter kalmanX = KalmanFilter(10, 500, 1);
-KalmanFilter kalmanY = KalmanFilter(10, 500, 1);
-KalmanFilter kalmanZ = KalmanFilter(10, 500, 1);
 
 #define TELEMETRY_BUFFER_CAPACITY 1200 // max number of packets to buffer. 1200 packets at 10Hz = 2 minutes of data.
 std::queue<TelemetryPacket> telemetryBuffer;
-MPU6050 mpu;
 
 //sends the queued telemetry to the client
 void sendData(){
 
     while(WifiHandler::client.connected() && !telemetryBuffer.empty()){
         //check if we have received an heartbeat recently, verifying the connection is still alive.
-        if(!(int32_t(WifiHandler::last_heartbeat_ms) - millis() > -1500)){
+        if(!(WifiHandler::last_heartbeat_ms > millis() - 1500)){
             return;
         }
 
@@ -91,11 +56,15 @@ void queueTelemetry(){
     TelemetryPacket packet;
     packet.signal = signal;
     packet.time = time;
-    packet.ax = kalmanX.getFilteredValue();
-    packet.ay = kalmanY.getFilteredValue();
-    packet.az = kalmanZ.getFilteredValue();
-    packet.gps_long = sin(millis() / 1000.0) * 100; // dummy GPS data
-    packet.gps_lat = cos(millis() / 1000.0) * 100; // dummy GPS data
+
+    int16_t ax, ay, az;
+    AccelerometerProvider::getAcceleration(ax, ay, az);
+    packet.ax = ax;
+    packet.ay = ay;
+    packet.az = az;
+
+    packet.gps_long = GpsProvider::getLongitude();
+    packet.gps_lat = GpsProvider::getLatitude();
 
     while(telemetryBuffer.size() >= TELEMETRY_BUFFER_CAPACITY){
         telemetryBuffer.pop(); // remove the oldest packet if buffer is full
@@ -105,39 +74,17 @@ void queueTelemetry(){
 
 // samples the sensors and updates the Kalman filters, but does not queue it to be sent
 void sampleSensors(int dt){
-    int16_t ax, ay, az;
-    mpu.getAcceleration(&ax, &ay, &az);
-
-    kalmanX.update(ax, dt);
-    kalmanY.update(ay, dt);
-    kalmanZ.update(az, dt);
+    AccelerometerProvider::update(dt);
+    GpsProvider::update(dt);
 }
 
 namespace TelemetryHandler{
     bool is_logging = false;
 
     void init(){
-
         Wire.begin();
-        mpu.initialize();
-        if (!mpu.testConnection()){
-            Serial.println("MPU6050 connection failed");
-            while (1){
-            }
-        }
-        else{
-            Serial.println("MPU6050 ready");
-        }
-
-        mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
-        // mpu.CalibrateAccel(10);
-        // mpu.setZAccelOffset(mpu.getZAccelOffset() - 1800);
-
-
-        //change these based on the particular sensor.
-        mpu.setXAccelOffset(-2280);
-        mpu.setYAccelOffset(1200);
-        mpu.setZAccelOffset(1300);
+        AccelerometerProvider::init();
+        GpsProvider::init();
     }
 
     void loop(){

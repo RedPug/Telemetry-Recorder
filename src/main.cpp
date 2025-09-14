@@ -1,10 +1,10 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <Renderer.h>
 #include "Pins.h"
-#include "WifiHandler.h"
-#include <TelemetryHandler.h>
+#include "Renderer.hpp"
+#include "WifiHandler.hpp"
+#include "TelemetryHandler.hpp"
 
 bool is_network_active = false;
 

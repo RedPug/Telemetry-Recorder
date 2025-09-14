@@ -1,15 +1,13 @@
 #include <Arduino.h>
-#include <Renderer.h>
+#include "Renderer.hpp"
 #include <vector>
 #include <inttypes.h>
-// #include <User_Setup.h>
-// #include <TFT_eSPI.h>
 #include <stdio.h>
-#include <Pins.h>
-#include <WifiHandler.h>
-#include <FormattedString.h>
-#include <TelemetryHandler.h>
-#include <Color.h>
+#include "Pins.h"
+#include "WifiHandler.hpp"
+#include "FormattedString.hpp"
+#include "TelemetryHandler.hpp"
+#include "Color.hpp"
 
 #ifndef RENDERER_H
 #define RENDERER_H

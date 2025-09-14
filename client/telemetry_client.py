@@ -89,7 +89,7 @@ def receive_telemetry():
             # f = 32, d = 64
 
             #test signal, time, ax, ay, az, longitude, latitude
-            format = "<BIhhhqq"  # Little-endian
+            format = "<BIhhhii"  # Little-endian is default for ESP32
             num_bytes = struct.calcsize(format)
 
             buffer = b''
@@ -99,7 +99,7 @@ def receive_telemetry():
                     client_sock.setblocking(False)
                     chunk = client_sock.recv(num_bytes - len(buffer))
                 except:
-                    time.sleep(1) # wait a second before trying again
+                    time.sleep(0.2) # wait before trying again
                     continue
                 if not chunk:
                     raise ConnectionError("Disconnected...")

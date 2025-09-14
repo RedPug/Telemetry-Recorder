@@ -1,7 +1,7 @@
 #include <WiFi.h>
 #include <Arduino.h>
-#include <WifiHandler.h>
-#include <TelemetryHandler.h>
+#include "WifiHandler.hpp"
+#include "TelemetryHandler.hpp"
 
 
 namespace WifiHandler{

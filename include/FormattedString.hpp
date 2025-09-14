@@ -5,7 +5,7 @@
 #include <utility>
 #include <cstddef>
 #include <regex>
-#include <Color.h>
+#include "Color.hpp"
 
 class FormattedString {
 public:
