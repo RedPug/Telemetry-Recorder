@@ -59,6 +59,7 @@ private:
     template<typename... Args>
     void parse(const std::string& input, Args... args) {
         
+        //format the string using parameters, like numbers and stuff
         static char buff[64];
         sprintf(buff, input.c_str(), args...);
         std::string str = std::string(buff);
@@ -66,7 +67,7 @@ private:
 
         segments_ = SegmentList();
 
-        //format $_{text}
+        //color format: $_{text}, where _ is a single character representing the color
         std::regex re(R"(\$(\w)\{([^}]*)\})");
         std::sregex_iterator it(str.begin(), str.end(), re);
         std::sregex_iterator end;
