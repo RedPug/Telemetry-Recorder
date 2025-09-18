@@ -13,8 +13,8 @@ void checkCommandInputs();
 
 void setup(){
   Serial.begin(9600);
-  Serial.print("Free heap: ");
-  Serial.println(ESP.getFreeHeap());
+
+  delay(200); // Wait for serial to initialize, but not too long if it isn't connected.
 
   pinMode(LEFT_BTN_PIN, INPUT_PULLUP);
   pinMode(RIGHT_BTN_PIN, INPUT_PULLUP);

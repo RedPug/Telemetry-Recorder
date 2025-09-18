@@ -8,6 +8,7 @@
 #include "FormattedString.hpp"
 #include "TelemetryHandler.hpp"
 #include "Color.hpp"
+#include <GpsProvider.hpp>
 
 #ifndef RENDERER_H
 #define RENDERER_H
@@ -161,7 +162,7 @@ float getSmoothBatteryVoltage(){
 }
 
 uint8_t getBatteryPercent(){
-    return max(min((int)((getSmoothBatteryVoltage() - 2.7) / (4.25 - 2.7) * 100), 100), 0);
+    return max(min((int)((getSmoothBatteryVoltage() - 2.7) / (4.25 - 2.7) * 100), 99), 0);
 }
 
 float getMillisAsFloat(){
@@ -211,6 +212,28 @@ Icon *batt_icon = new Icon(std::vector<Icon::Img>(
     6, 2
 );
 
+Icon *gps_icon = new Icon(Icon::Img({
+    0b00111000,
+    0b01101100,
+    0b01000100,
+    0b00101000,
+    0b00111000,
+    0b00010000,
+    0b00010000,
+    0b11111110
+}, Color::White), 7, 2);
+
+Icon *satellite_icon = new Icon(Icon::Img({
+    0b00110000,
+    0b00110110,
+    0b00001110,
+    0b00011100,
+    0b11011011,
+    0b00100011,
+    0b00010000,
+    0b00010000
+}, Color::White), 8, 2);
+
 namespace Renderer{
     TFT_eSPI tft = TFT_eSPI(135, 240);
 
@@ -223,18 +246,25 @@ namespace Renderer{
     void initPanels(){
         panels = std::vector<Panel>();
 
-        panels.push_back(Panel(0, 0, 80, 20,
+        panels.push_back(Panel(0, 0, 65, 20,
             *[](){
-                return FormattedString("%3d%%", getBatteryPercent());
+                return FormattedString("%2d%%", getBatteryPercent());
             },
             batt_icon
         ));
 
-        panels.push_back(Panel(90, 0, 95, 20,
+        panels.push_back(Panel((65 + 240-55)/2-95/2, 0, 95, 20,
             *[](){
                 return FormattedString("%01d:%02d:%02d",
                 (int)(millis() / 1000 / 3600), (int)((millis() / 1000) / 60 % 60), (int)(millis() / 1000 % 60));
             }));
+
+        panels.push_back(Panel(240-55, 0, 55, 20,
+            *[](){
+                return FormattedString("%02d", GpsProvider::getNumSatellites());
+            },
+            satellite_icon
+            ));
 
         panels.push_back(Panel(0, 30, 240, 20,
             *[](){
@@ -247,6 +277,15 @@ namespace Renderer{
                 return FormattedString("Logging: %s",
                 (TelemetryHandler::is_logging ? "$g{On}" : "$r{Off}"));
             }));
+
+        panels.push_back(Panel(0, 90, 70, 20,
+            *[](){
+                return FormattedString("GPS");
+            },
+            gps_icon
+        ));
+        
+        
 
         for (auto &panel : panels){
             panel.updateSprite();
