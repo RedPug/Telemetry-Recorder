@@ -18,7 +18,7 @@ namespace WifiHandler{
         WiFi.softAP(ssid, password);
 
         server.begin();
-        connection_status = WIFI_ACTIVE;
+        connection_status = WIFI_WAITING;
 
         Serial.println("Server started!");
     }
@@ -28,6 +28,7 @@ namespace WifiHandler{
 
         int num_clients = WiFi.softAPgetStationNum();
 
+        // attempt to reconnect the client if disconnected
         if (!client.connected() || num_clients == 0) {
             client.stop();
             WiFiClient newClient = server.available();
@@ -35,11 +36,12 @@ namespace WifiHandler{
                 client = newClient;
             }
         }
-
-        if(client.connected()){
+        
+        // Check for both a connected state and a recent heartbeat
+        if(client.connected() && last_heartbeat_ms > millis() - 1500){
             connection_status = WIFI_CONNECTED;
         }else{
-            connection_status = WIFI_ACTIVE;
+            connection_status = WIFI_WAITING;
         }
     }
 

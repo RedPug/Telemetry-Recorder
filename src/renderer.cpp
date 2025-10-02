@@ -8,7 +8,8 @@
 #include "FormattedString.hpp"
 #include "TelemetryHandler.hpp"
 #include "Color.hpp"
-#include <GpsProvider.hpp>
+#include "GpsProvider.hpp"
+#include "AccelerometerProvider.hpp"
 
 #ifndef RENDERER_H
 #define RENDERER_H
@@ -146,7 +147,7 @@ float getSmoothBatteryVoltage(){
     }
 
     uint16_t v = analogRead(ADC_PIN);
-    //                        0-4095 -> 0-1        ?  voltage  correction factor
+    //                        0-4095 -> 0-1        ?     voltage  correction factor
     float battery_voltage = ((float)v / 4095.0f) * 2.0f * 3.3f * (1100.0f / 1000.0f);
 
     // should reset current cycle
@@ -169,8 +170,8 @@ float getMillisAsFloat(){
     return static_cast<float>(millis());
 }
 
-Icon *batt_icon = new Icon(std::vector<Icon::Img>(
-    {Icon::Img({
+Icon *batt_icon = new Icon(std::vector<Icon::Img>({
+    Icon::Img({
         0b00110000,
         0b00110000,
         0b11001100,
@@ -212,16 +213,32 @@ Icon *batt_icon = new Icon(std::vector<Icon::Img>(
     6, 2
 );
 
-Icon *gps_icon = new Icon(Icon::Img({
-    0b00111000,
-    0b01101100,
-    0b01000100,
-    0b00101000,
-    0b00111000,
-    0b00010000,
-    0b00010000,
-    0b11111110
-}, Color::White), 7, 2);
+Icon *gps_icon = new Icon(std::vector<Icon::Img>({
+    Icon::Img({
+        0b00111000,
+        0b01101100,
+        0b01000100,
+        0b00101000,
+        0b00111000,
+        0b00010000,
+        0b00010000,
+        0b11111110
+    }, Color::Green),
+    Icon::Img({
+        0b00111000,
+        0b01101100,
+        0b01000100,
+        0b00101000,
+        0b00111000,
+        0b00010000,
+        0b00010000,
+        0b11111110
+    }, Color::Red)
+}),*[](){
+        return GpsProvider::is_active ? 0 : 1;
+    },
+    7, 2
+);
 
 Icon *satellite_icon = new Icon(Icon::Img({
     0b00110000,
@@ -280,9 +297,15 @@ namespace Renderer{
 
         panels.push_back(Panel(0, 90, 70, 20,
             *[](){
-                return FormattedString("GPS");
+                return FormattedString("$%s{GPS}", GpsProvider::is_active ? "g" : "r");
             },
             gps_icon
+        ));
+
+        panels.push_back(Panel(80, 90, 70, 20,
+            *[](){
+                return FormattedString("$%s{IMU}", AccelerometerProvider::is_active ? "g" : "r");
+            }
         ));
         
         

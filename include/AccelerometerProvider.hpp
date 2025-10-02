@@ -8,9 +8,11 @@ private:
     static MPU6050 mpu;
 
 public:
+    static bool is_active;
+    
     static void init();
 
     static void update(uint32_t dt);
 
-    static void getAcceleration(int16_t &ax, int16_t &ay, int16_t &az);
+    static void getAcceleration(float &ax, float &ay, float &az);
 };

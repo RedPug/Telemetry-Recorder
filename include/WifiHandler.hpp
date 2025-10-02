@@ -4,7 +4,7 @@
 #define WIFI_HANDLER_H
 
 #define WIFI_INACTIVE 0
-#define WIFI_ACTIVE 1
+#define WIFI_WAITING 1
 #define WIFI_CONNECTED 2
 
 namespace WifiHandler{

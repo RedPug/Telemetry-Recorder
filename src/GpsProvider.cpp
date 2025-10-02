@@ -8,8 +8,10 @@
 
 //dummy gps implementation for testing.
 
-void GpsProvider::init(){
+bool GpsProvider::is_active = false;
 
+void GpsProvider::init(){
+    GpsProvider::is_active = false;
 }
 
 void GpsProvider::update(uint32_t dt){

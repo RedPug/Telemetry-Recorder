@@ -10,10 +10,9 @@
 #include "GpsProvider.hpp"
 
 struct __attribute__((packed)) TelemetryPacket{
-    uint8_t signal;
     uint32_t time;
-    int16_t ax, ay, az;
-    int32_t gps_long, gps_lat;
+    float ax, ay, az;
+    float gps_long, gps_lat;
 };
 
 #define TELEMETRY_BUFFER_CAPACITY 1200 // max number of packets to buffer. 1200 packets at 10Hz = 2 minutes of data.
@@ -50,14 +49,12 @@ void sendData(){
 
 //records the data and queues it to be sent in sendData()
 void queueTelemetry(){
-    uint8_t signal = millis() % 1000 < 500 ? LOW : HIGH;
     uint32_t time = millis();
 
     TelemetryPacket packet;
-    packet.signal = signal;
     packet.time = time;
 
-    int16_t ax, ay, az;
+    float ax, ay, az;
     AccelerometerProvider::getAcceleration(ax, ay, az);
     packet.ax = ax;
     packet.ay = ay;

@@ -4,6 +4,7 @@
 
 class GpsProvider {
 public:
+    static bool is_active;
     static void init();
     static void update(uint32_t dt);
     static int32_t getLatitude();
