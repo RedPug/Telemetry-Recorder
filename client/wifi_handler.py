@@ -36,6 +36,9 @@ def is_client_connected():
     
 def send_data(data: bytes):
     client_sock.sendall(data)
+
+def receive_data(num_bytes: int) -> bytes:
+    return client_sock.recv(num_bytes)
     
 def verifyClientConnected():
     if not is_client_connected():

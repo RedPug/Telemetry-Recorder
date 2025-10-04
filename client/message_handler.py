@@ -2,7 +2,7 @@ import json
 import socket
 import time
 import wifi_handler
-from wifi_handler import send_data
+from wifi_handler import send_data, receive_data
 import threading
 from dataclasses import dataclass
 from typing import Callable
@@ -116,7 +116,7 @@ def get_json_messages() -> list[dict]:
         
         try:
             # Receive up to 1024 chars from network buffer
-            data:str = client_sock.recv(1024).decode('utf-8')
+            data:str = receive_data(1024).decode('utf-8')
             if not data:
                 return messages  # Connection closed
             buffer += data
