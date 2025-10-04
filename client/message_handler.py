@@ -1,8 +1,11 @@
 import json
-from wifi_handler import client_sock
+import socket
+import time
+import wifi_handler
+from wifi_handler import send_data
 import threading
-import file_manager
 from dataclasses import dataclass
+from typing import Callable
 
 @dataclass
 class DataPacket:
@@ -16,21 +19,43 @@ class DataPacket:
 data_lock = threading.Lock()
 all_data : list[DataPacket] = []
 
+type MessageCallback = Callable[[dict], None]
+
+callbacks:list[tuple[MessageCallback, str]] = []
+
 buffer:str = "" # Buffer to hold partial data
 
 def begin():
     """
     Begin listening for and logging data.
     """
-    recv_thread = threading.Thread(target=receive_telemetry, daemon=True)
+    recv_thread = threading.Thread(target=listen_for_messages, daemon=True)
     recv_thread.start()
     pass
 
-def receive_telemetry():
+def send_message(cmd: str):
+    wifi_handler.verifyClientConnected()
+    if not cmd.endswith("\n"):
+        cmd += "\n"
+    try:
+        send_data(cmd.encode("utf-8"))
+
+        print(f"Sent command: {cmd.strip()}")
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        wifi_handler.connect_to_server()
+    
+
+def listen_for_messages():
     while True:
-        messages:list[dict] = receive_json_messages()
+        messages:list[dict] = get_json_messages()
         for msg in messages:
-            if msg['type'] == 'data':
+            msg_type:str = msg['type']
+            for callback, data_type in callbacks:
+                if data_type == None or data_type == msg_type:
+                    callback(msg)
+
+            if msg_type == 'data':
                 packet = DataPacket(
                     timestamp = msg['ts'],
                     acc_x =     msg['ax'],
@@ -41,7 +66,7 @@ def receive_telemetry():
                 )
                 handle_packet(packet)
             else:
-                print(f"Unknown message type: {msg['type']}")
+                print(f"Unknown message type: {msg_type}")
     # while True:
     #     verifyClientConnected()
 
@@ -85,7 +110,7 @@ def receive_telemetry():
     #             print("Attempting to reconnect...")
     #             connect_to_server()
 
-def receive_json_messages() -> list[dict]:
+def get_json_messages() -> list[dict]:
         """Receive and parse JSON messages, handling partial/multiple messages"""
         messages:list[dict] = []
         
@@ -109,20 +134,22 @@ def receive_json_messages() -> list[dict]:
                         messages.append(json_obj)
                     except json.JSONDecodeError as e:
                         print(f"Invalid JSON line: {line[:50]}... Error: {e}")
-        except socket.timeout:
-            print("Socket timeout - no data received")
-        except ConnectionResetError:
-            print("Connection lost")
-            buffer = ""  # Clear buffer on connection loss
         except Exception as e:
             print(f"Error receiving data: {e}")
+            time.sleep(1)
         
         return messages
 
 def handle_packet(packet: DataPacket):
     global all_data
-
+    
+    import file_manager  # Import here to avoid circular import
     file_manager.log_data(packet)
     
     with data_lock:
         all_data.append(packet)
+
+def add_message_callback(callback: MessageCallback, msg_type: str = None):
+    callbacks.append((callback, msg_type))
+    s = "giusdjfkhdsgksjgkfjgkjfkgjk"
+

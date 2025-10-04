@@ -1,7 +1,7 @@
 import datetime
 import os
 import csv
-from data import DataPacket
+from message_handler import DataPacket
 
 writer:csv.writer = None
 

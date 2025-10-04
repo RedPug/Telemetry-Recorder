@@ -23,26 +23,21 @@ def connect_to_server():
             print("Connected!")
             break
         except Exception as _:
-            # print(f"Connection failed: {e}")
             print("Connection failed...")
             time.sleep(1)
 
-# def get_wifi_strength():
-#     result = subprocess.run(['netsh', 'wlan', 'show', 'interfaces'], capture_output=True, text=True)
-#     for line in result.stdout.splitlines():
-#         if "Signal" in line:
-#             # Example line: "    Signal                 : 80%"
-#             strength = int(line.split(":")[1].strip().replace('%', ''))
-#             return strength
-#     return None
-
 def is_client_connected():
+    global client_sock
     try:
-        client_sock.send(b'')  # Sending empty bytes is safe and triggers error if disconnected
+        client_sock.sendall(b'')  # Sending empty bytes is safe and triggers error if disconnected
         return True
     except (OSError, ConnectionResetError, BrokenPipeError):
         return False
     
+def send_data(data: bytes):
+    client_sock.sendall(data)
+    
 def verifyClientConnected():
     if not is_client_connected():
         connect_to_server()
+
