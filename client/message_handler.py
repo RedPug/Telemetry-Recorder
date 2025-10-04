@@ -1,23 +1,11 @@
 import json
-import socket
+# import socket
 import time
 import wifi_handler
 from wifi_handler import send_data, receive_data
 import threading
-from dataclasses import dataclass
 from typing import Callable
 
-@dataclass
-class DataPacket:
-    timestamp: float
-    acc_x: float
-    acc_y: float
-    acc_z: float
-    gps_long: float
-    gps_lat: float
-
-data_lock = threading.Lock()
-all_data : list[DataPacket] = []
 
 type MessageCallback = Callable[[dict], None]
 
@@ -40,7 +28,7 @@ def send_message(cmd: str):
     try:
         send_data(cmd.encode("utf-8"))
 
-        print(f"Sent command: {cmd.strip()}")
+        # print(f"Sent message: {cmd.strip()}")
     except Exception as e:
         print(f"Error sending message: {e}")
         wifi_handler.connect_to_server()
@@ -50,23 +38,26 @@ def listen_for_messages():
     while True:
         messages:list[dict] = get_json_messages()
         for msg in messages:
+            # print(f"Recieved Message: {msg}")
             msg_type:str = msg['type']
             for callback, data_type in callbacks:
+                # print(f"callback exists with type {data_type}")
                 if data_type == None or data_type == msg_type:
+                    # print("forwarding to callback...")
                     callback(msg)
 
-            if msg_type == 'data':
-                packet = DataPacket(
-                    timestamp = msg['ts'],
-                    acc_x =     msg['ax'],
-                    acc_y =     msg['ay'],
-                    acc_z =     msg['az'],
-                    gps_long =  msg['lon'],
-                    gps_lat =   msg['lat']
-                )
-                handle_packet(packet)
-            else:
-                print(f"Unknown message type: {msg_type}")
+            # if msg_type == 'data':
+            #     packet = DataPacket(
+            #         timestamp = msg['ts'],
+            #         acc_x =     msg['ax'],
+            #         acc_y =     msg['ay'],
+            #         acc_z =     msg['az'],
+            #         gps_long =  msg['lon'],
+            #         gps_lat =   msg['lat']
+            #     )
+            #     handle_packet(packet)
+            # else:
+            #     print(f"Unknown message type: {msg_type}")
     # while True:
     #     verifyClientConnected()
 
@@ -112,16 +103,20 @@ def listen_for_messages():
 
 def get_json_messages() -> list[dict]:
         """Receive and parse JSON messages, handling partial/multiple messages"""
+        global buffer
+        
         messages:list[dict] = []
         
         try:
             # Receive up to 1024 chars from network buffer
+            # print("waiting for data...")
             data:str = receive_data(1024).decode('utf-8')
+            # print(f"recieved data: {data}")
             if not data:
                 return messages  # Connection closed
             buffer += data
-            # Split by null characters (assuming each JSON is separated by a null character)
-            lines:list[str] = buffer.split('\0')
+            # Split json packets by newline characters
+            lines:list[str] = buffer.split('\n')
             # Keep the last line in buffer (might be partial)
             buffer = lines[-1]
             
@@ -140,16 +135,8 @@ def get_json_messages() -> list[dict]:
         
         return messages
 
-def handle_packet(packet: DataPacket):
-    global all_data
-    
-    import file_manager  # Import here to avoid circular import
-    file_manager.log_data(packet)
-    
-    with data_lock:
-        all_data.append(packet)
-
 def add_message_callback(callback: MessageCallback, msg_type: str = None):
+    global callbacks
     callbacks.append((callback, msg_type))
-    s = "giusdjfkhdsgksjgkfjgkjfkgjk"
+    print("added callback.")
 

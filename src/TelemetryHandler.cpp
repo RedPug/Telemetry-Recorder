@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <MPU6050.h>
 #include <queue>
+#include <ArduinoJson.h>
 #include "WifiHandler.hpp"
 #include "KalmanFilter.hpp"
 #include "TelemetryHandler.hpp"
@@ -29,22 +30,38 @@ void sendData(){
 
         TelemetryPacket packet = telemetryBuffer.front();
 
+        JsonDocument doc;
+        doc["type"] = "data";
+        doc["ts"] = packet.time;
+        doc["ax"] = packet.ax;
+        doc["ay"] = packet.ay;
+        doc["az"] = packet.az;
+        doc["lon"] = packet.gps_long;
+        doc["lat"] = packet.gps_lat;
+
+        String jsonString;
+        serializeJson(doc, jsonString);
+
+        // size_t num_bytes_expected = jsonString.length();
+
+        size_t num_bytes_sent = WifiHandler::client.println(jsonString);
+
         // Serial.print("Sending telemetry packet...");
-        uint8_t* buffer = (uint8_t*)&packet;
-        size_t num_bytes_sent = WifiHandler::client.write(buffer, sizeof(packet));
+        // uint8_t* buffer = (uint8_t*)&packet;
+
+        // size_t num_bytes_sent = WifiHandler::client.write(buffer, sizeof(packet));
         
-        if(num_bytes_sent != sizeof(packet)){
-            Serial.println("Error sending telemetry. Sent " + String(num_bytes_sent) + " bytes of " + String(sizeof(packet)));
-            // Serial.println("Error code: " + String(WifiHandler::client.getWriteError()));
-            Serial.println(String(telemetryBuffer.size()) + " packets left in buffer.");
-            WifiHandler::client.stop();
-            return; //probably a network error, stop trying to send more.
-        }
+        // if(num_bytes_sent != sizeof(packet)){
+        //     Serial.println("Error sending telemetry. Sent " + String(num_bytes_sent) + " bytes of " + String(sizeof(packet)));
+        //     // Serial.println("Error code: " + String(WifiHandler::client.getWriteError()));
+        //     Serial.println(String(telemetryBuffer.size()) + " packets left in buffer.");
+        //     WifiHandler::client.stop();
+        //     return; //probably a network error, stop trying to send more.
+        // }
+
         telemetryBuffer.pop(); //only pop if it was actually sent.
         // Serial.println(" sent!");
     }
-
-
 }
 
 //records the data and queues it to be sent in sendData()

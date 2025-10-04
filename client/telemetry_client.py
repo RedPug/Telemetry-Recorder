@@ -1,7 +1,6 @@
 import threading
 import time
 import os
-import sys
 
 # Change to the client directory to ensure imports work
 client_dir = os.path.dirname(os.path.abspath(__file__))
@@ -9,26 +8,21 @@ os.chdir(client_dir)
 
 import wifi_handler
 import message_handler
-from message_handler import DataPacket
 import plot
-
-# data : list[DataPacket] = []
-# data_lock = threading.Lock()
-
-# NUM_POINTS = 50
+import data_handler
 
 is_logging = False
 
-def send_command(cmd: str):
-    global is_logging
-    cmd = cmd.strip()
+# def send_command(cmd: str):
+#     global is_logging
+#     cmd = cmd.strip()
 
-    if cmd == 'start':
-        is_logging = True
-        message_handler.send_message('start')
-    elif cmd == 'stop':
-        is_logging = False
-        message_handler.send_message('stop')
+#     if cmd == 'start':
+#         is_logging = True
+#         message_handler.send_message('start')
+#     elif cmd == 'stop':
+#         is_logging = False
+#         message_handler.send_message('stop')
 
 
 def send_heartbeat():
@@ -55,6 +49,8 @@ def main():
     # recv_thread = threading.Thread(target=message_handler.listen_for_messages, daemon=True)
     # recv_thread.start()
 
+    message_handler.begin()
+
     heart_thread = threading.Thread(target=send_heartbeat, daemon=True)
     heart_thread.start()
 
@@ -68,7 +64,11 @@ def main():
         plot.onFrame()
         # time.sleep(0.2)
 
-    
+def handle_status_update(data: dict):
+    status = data.get('status', 'unknown')
+    print(f"Status update: {status}")
+
+message_handler.add_message_callback(handle_status_update,'update')
         
 
 if __name__ == "__main__":

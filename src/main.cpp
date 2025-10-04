@@ -91,6 +91,7 @@ void checkCommandInputs(){
       Serial.println("Logging stopped");
     }else if (cmd.equalsIgnoreCase("HB")){
       WifiHandler::last_heartbeat_ms = millis();
+      Serial.println("heartbeat!");
     }
   }
 }

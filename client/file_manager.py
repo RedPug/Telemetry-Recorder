@@ -1,11 +1,15 @@
 import datetime
 import os
 import csv
-from message_handler import DataPacket
+from data_handler import DataPacket
 
 writer:csv.writer = None
 
 def create_log_file():
+    global writer
+
+    print("making new log file...")
+
     filename = datetime.datetime.now().strftime("telemetry_%Y_%m_%d_at_%H_%M_%S.csv")
 
     os.makedirs(os.path.join(os.path.dirname(__file__), 'output'), exist_ok=True) # create output directory if it doesn't exist
@@ -19,6 +23,10 @@ def close_log_file(csv_file):
     csv_file.close()
 
 def log_data(packet: DataPacket):
+    global writer
+    if(writer == None): create_log_file()
+    print("logging...")
+
     writer.writerow([
         packet.timestamp,
         f"{packet.acc_x:0.5f}",
